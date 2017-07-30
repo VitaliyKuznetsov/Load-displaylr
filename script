@@ -1,0 +1,25 @@
+#!/bin/bash
+
+logs_path="/var/log/loads"
+filename=$(date +"%m_%y.log")
+fullpath=$logs_path/$filename
+if [ ! -d "$logs_path" ]
+then
+	mkdir $logs_path
+fi
+
+
+runtime=$(date +"%d.%m.%Y %H:%M:%S")
+cpu=$(iostat -c | awk 'NR==4{usage=sub(",",".",$6); usage=100-$6; printf("%.0f%", usage)}')
+disk=$(df -h --output=used,size,pcent /| awk ' NR==2{print $1"/"$2" ("$3")"}')
+inodes=$(df --output=iused,itotal,ipcent /| awk ' NR==2{print $1"/"$2" ("$3")"}')
+memory=$(free -h | awk 'NR==2{used=$3; total=$7};END{usedF=substr(used,1,length(used)-1); totalF=substr(total,1,length(total)-1);sub(",",".",usedF);sub(",",".",totalF);result=(usedF/totalF)*100;printf("%s/%s (%0.f%%)", substr(used,1,length(used)-1), total, result)}')
+
+string="$runtime CPU: $cpu; Disk: $disk (INodes: $inodes); Mem: $memory"
+if [ ! -f "$fullpath" ]
+then
+	touch $fullpath
+	echo $string > $fullpath
+else
+	echo $string >> $fullpath
+fi
